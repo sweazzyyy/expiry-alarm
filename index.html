@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; media-src 'self' data: blob:; img-src 'self' data:">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Будильник сроков</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <span class="dot" id="statusDot" title=""></span>
+    <div>
+      <div class="title">Будильник сроков</div>
+      <div class="sub" id="pizzeriaName"></div>
+    </div>
+  </div>
+  <nav class="tabs">
+    <button data-view="list" class="active">Будильники <span class="badge hidden" id="expBadge">0</span></button>
+    <button data-view="create" class="primary">＋ Создать</button>
+    <button data-view="reports">Отчёты</button>
+    <button data-view="settings">Настройки</button>
+  </nav>
+</header>
+
+<div class="banner warn hidden" id="voiceBanner">
+  На этом компьютере не найден русский голос — озвучка будет звучать с акцентом или не будет работать.
+  <button class="link" data-view-go="settings" data-scroll="voiceSection">Как настроить</button>
+</div>
+
+<main>
+  <!-- ===== Список ===== -->
+  <section class="view" id="view-list">
+    <div class="row between">
+      <h2>Будильники</h2>
+      <div class="row gap">
+        <input type="search" id="listSearch" placeholder="Поиск…">
+        <button class="ghost" id="muteBtn" title="Выключить звук на 5 минут">🔕 Тишина 5 мин</button>
+      </div>
+    </div>
+    <div id="alarmList" class="cards"></div>
+    <div class="empty hidden" id="listEmpty">Активных будильников нет. Нажмите «＋ Создать».</div>
+  </section>
+
+  <!-- ===== Создание ===== -->
+  <section class="view hidden" id="view-create">
+    <h2>Новый будильник</h2>
+    <form id="createForm" class="panel form" autocomplete="off">
+      <label>Название
+        <input id="fName" list="itemsList" required placeholder="Сыр моцарелла">
+        <datalist id="itemsList"></datalist>
+      </label>
+      <div class="chips" id="popularChips"></div>
+
+      <label>Место хранения
+        <input id="fLoc" list="locList" placeholder="Холодильник 1">
+        <datalist id="locList"></datalist>
+        <small>Поможет быстро найти продукт.</small>
+      </label>
+
+      <div class="grid2">
+        <label>Дата списания
+          <input type="date" id="fDate" required>
+        </label>
+        <label>Время
+          <input type="time" id="fTime" required>
+        </label>
+      </div>
+      <div class="chips" id="dateChips">
+        <button type="button" data-days="0">Сегодня</button>
+        <button type="button" data-days="1">Завтра</button>
+        <button type="button" data-days="2">+2 дня</button>
+        <button type="button" data-days="3">+3 дня</button>
+        <button type="button" data-days="5">+5 дней</button>
+        <button type="button" data-days="7">+7 дней</button>
+      </div>
+      <div class="chips" id="hourChips">
+        <button type="button" data-hours="1">+1 ч</button>
+        <button type="button" data-hours="2">+2 ч</button>
+        <button type="button" data-hours="4">+4 ч</button>
+        <button type="button" data-hours="6">+6 ч</button>
+        <button type="button" data-hours="12">+12 ч</button>
+        <button type="button" data-hours="24">+24 ч</button>
+      </div>
+      <div class="hint" id="shiftHint"></div>
+
+      <label>Комментарий <span class="muted">(необязательно)</span>
+        <input id="fComment" placeholder="Например: открытая упаковка">
+      </label>
+
+      <button type="submit" class="primary big">Создать будильник</button>
+    </form>
+  </section>
+
+  <!-- ===== Отчёты ===== -->
+  <section class="view hidden" id="view-reports">
+    <div class="row between">
+      <h2>Отчёты</h2>
+      <input type="date" id="repDate">
+    </div>
+    <p class="muted">Будильники, у которых срок истёк в этот день, и те, что списаны в этот день. Отчёты удаляются автоматически через 14 дней.</p>
+    <div class="stats" id="repStats"></div>
+    <div id="repList" class="cards"></div>
+  </section>
+
+  <!-- ===== Настройки ===== -->
+  <section class="view hidden" id="view-settings">
+    <h2>Настройки</h2>
+
+    <div class="panel">
+      <h3>Уведомления</h3>
+      <label class="switch"><input type="checkbox" id="sNotify"> Системные уведомления</label>
+      <label class="switch"><input type="checkbox" id="sShowWindow"> Показывать окно, когда срок истёк</label>
+      <label class="switch"><input type="checkbox" id="sAutostart"> Запускать вместе с компьютером</label>
+      <button class="ghost" id="testNotify">Проверить уведомление</button>
+    </div>
+
+    <div class="panel" id="voiceSection">
+      <h3>Голос и звук</h3>
+      <div id="voiceStatus" class="hint"></div>
+      <div class="howto hidden" id="voiceHowto">
+        <b>Как установить русский голос в Windows:</b>
+        <ol>
+          <li>Параметры → Время и язык → Речь (кнопка ниже открывает этот раздел).</li>
+          <li>«Управление голосами» → «Добавить голоса» → Русский.</li>
+          <li>Если голоса нет: Время и язык → Язык → добавьте «Русский» с компонентом «Речь».</li>
+          <li>Перезапустите приложение и нажмите «Обновить».</li>
+        </ol>
+      </div>
+      <div class="row gap wrap">
+        <button class="ghost" id="openSpeech">Установить русский голос</button>
+        <button class="ghost" id="refreshVoices">Обновить</button>
+      </div>
+
+      <label class="switch"><input type="checkbox" id="sSpeak"> Озвучивать</label>
+      <label class="switch"><input type="checkbox" id="sSoundOn"> Звуковой сигнал</label>
+
+      <div class="grid2">
+        <label>Голос
+          <select id="sVoice"></select>
+        </label>
+        <label>Скорость речи <span id="rateVal"></span>
+          <input type="range" id="sRate" min="0.6" max="1.6" step="0.05">
+        </label>
+      </div>
+      <div class="grid2">
+        <label>Сигнал
+          <select id="sSound">
+            <option value="bell">Звонок подачи</option>
+            <option value="timer">Кухонный таймер</option>
+            <option value="dingdong">«Динь-дон» вызов официанта</option>
+            <option value="waiter">Колокольчик официанта</option>
+            <option value="gong">Кухонный гонг</option>
+            <option value="soft">Мягкий</option>
+            <option value="none">Без звука</option>
+          </select>
+        </label>
+        <label>Громкость <span id="volVal"></span>
+          <input type="range" id="sVolume" min="0" max="1" step="0.05">
+        </label>
+      </div>
+      <div class="row gap wrap">
+        <button class="ghost" id="testSound">▶ Сигнал</button>
+        <button class="ghost" id="testVoice">▶ Голос</button>
+        <button class="ghost" id="testFull">▶ Полная проверка</button>
+      </div>
+
+      <h4>Свои записи</h4>
+      <p class="muted">mp3, m4a или wav, до 1,8 МБ. Если запись загружена, она звучит вместо синтезированного голоса.</p>
+      <div class="rec" data-kind="expired">
+        <div><b>Срок истёк</b> («спишите»)</div>
+        <div class="row gap wrap">
+          <span class="recState"></span>
+          <label class="btn ghost">Загрузить<input type="file" accept=".mp3,.m4a,.wav,audio/*" hidden></label>
+          <button class="ghost recPlay">▶</button>
+          <button class="ghost danger recDel">Удалить</button>
+        </div>
+      </div>
+      <div class="rec" data-kind="soon">
+        <div><b>Скоро истекает</b></div>
+        <div class="row gap wrap">
+          <span class="recState"></span>
+          <label class="btn ghost">Загрузить<input type="file" accept=".mp3,.m4a,.wav,audio/*" hidden></label>
+          <button class="ghost recPlay">▶</button>
+          <button class="ghost danger recDel">Удалить</button>
+        </div>
+      </div>
+    </div>
+
+    <form class="panel form" id="rulesForm">
+      <h3>Правила будильника</h3>
+      <label>Название пиццерии (в заголовке)
+        <input id="sPizzeria">
+      </label>
+      <label class="switch"><input type="checkbox" id="sHoursOn"> Учитывать часы работы</label>
+      <div class="grid2">
+        <label>Открытие <input type="time" id="sOpen"></label>
+        <label>Закрытие <input type="time" id="sClose"></label>
+      </div>
+      <small>Если срок выпадает на время, когда пиццерия закрыта, будильник сработает в момент закрытия накануне.</small>
+      <div class="grid2">
+        <label>Предупреждать заранее, мин
+          <input type="number" id="sAdvance" min="0" max="1440">
+        </label>
+        <label>Повтор голоса, сек
+          <input type="number" id="sRepeat" min="10" max="3600">
+        </label>
+      </div>
+      <button type="submit" class="primary">Сохранить</button>
+    </form>
+
+    <div class="panel">
+      <h3>Сырьё и продукты</h3>
+      <div class="chips editable" id="itemsChips"></div>
+      <form class="row gap" id="itemAdd"><input placeholder="Добавить продукт" required><button class="ghost">Добавить</button></form>
+    </div>
+
+    <div class="panel">
+      <h3>Места хранения</h3>
+      <div class="chips editable" id="locChips"></div>
+      <form class="row gap" id="locAdd"><input placeholder="Добавить место" required><button class="ghost">Добавить</button></form>
+    </div>
+
+    <div class="panel">
+      <h3>Данные</h3>
+      <p class="muted">Всё хранится локально на этом компьютере (localStorage).</p>
+      <div class="row gap wrap">
+        <button class="ghost" id="exportBtn">Экспорт в файл</button>
+        <label class="btn ghost">Импорт из файла<input type="file" id="importFile" accept=".json" hidden></label>
+        <button class="ghost danger" id="resetBtn">Удалить все данные</button>
+        <button class="ghost" id="quitBtn">Выйти из приложения</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>Будильник сроков · сборка 1.0 (Electron, localStorage) · Сделано для команды пиццерии</footer>
+
+<!-- ===== Диалог списания ===== -->
+<dialog id="woDialog">
+  <form method="dialog" id="woForm">
+    <h3>Закончилось?</h3>
+    <div class="woInfo" id="woInfo"></div>
+    <div class="seg" id="woReason">
+      <button type="button" data-v="expired" class="on">Истёк срок, списываю</button>
+      <button type="button" data-v="early">Закончилось раньше</button>
+    </div>
+    <div id="woAmountBox">
+      <div class="muted">Сколько списано</div>
+      <div class="chips" id="woAmount">
+        <button type="button" data-v="Всё">Всё</button>
+        <button type="button" data-v="Половина">Половина</button>
+        <button type="button" data-v="0,5 кг">0,5 кг</button>
+        <button type="button" data-v="1 кг">1 кг</button>
+        <button type="button" data-v="Ничего">Ничего</button>
+      </div>
+      <input id="woCustom" placeholder="Или своё значение, например 300 г">
+    </div>
+    <div class="row between wrap gap">
+      <button type="button" class="ghost danger" id="woDelete">Удалить ошибочный</button>
+      <div class="row gap">
+        <button type="button" class="ghost" id="woCancel">Отмена</button>
+        <button type="button" class="primary" id="woOk">Списать</button>
+      </div>
+    </div>
+  </form>
+</dialog>
+
+<div id="toast" class="toast hidden"></div>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+{
+  "name": "expiry-alarm",
+  "productName": "ExpiryAlarm",
+  "version": "1.0.0",
+  "description": "Будильник сроков — контроль сроков годности продуктов пиццерии с голосовыми напоминаниями",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win",
+    "portable": "electron-builder --win portable"
+  },
+  "devDependencies": {
+    "electron": "^37.0.0",
+    "electron-builder": "^26.0.0"
+  },
+  "build": {
+    "appId": "ru.pizzeria.expiry-alarm",
+    "productName": "ExpiryAlarm",
+    "electronDist": "node_modules/electron/dist",
+    "files": ["main.js", "preload.js", "index.html", "styles.css", "app.js", "icon.png"],
+    "win": { "target": "nsis", "icon": "icon.png" },
+    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true, "shortcutName": "Будильник сроков" }
+  }
+}
